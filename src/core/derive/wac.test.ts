@@ -46,4 +46,20 @@ describe('deriveWac', () => {
     expect(rows[0]).toMatchObject({ sku: 'X', receipt_count: 1, last_cost: 9 })
     expect(rows[0]!.avg_cost_all_time).toBeUndefined()
   })
+
+  it('treats undated events as oldest; excluded from time windows', () => {
+    const rows = deriveWac(
+      [
+        { sku: 'Y', qty: 2, unit_cost: 5, source: 'cost_report' },
+        { sku: 'Y', date: '2026-08-01', qty: 2, unit_cost: 7, source: 'po_receipt' },
+      ],
+      [],
+      NOW,
+    )
+    const row = rows[0]!
+    expect(row.last_cost).toBe(7) // dated event is later
+    expect(row.avg_cost_all_time).toBe(6) // (2*5 + 2*7) / 4 = 6
+    expect(row.avg_cost_90d).toBe(7) // undated excluded, only 2026-08-01
+    expect(row.avg_cost_365d).toBe(7) // undated excluded, only 2026-08-01
+  })
 })

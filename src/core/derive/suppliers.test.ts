@@ -35,4 +35,24 @@ describe('deriveSuppliers', () => {
     )
     expect(suppliers).toEqual([])
   })
+
+  it('uses qty_ordered * unit_cost as spend fallback when line_total absent', () => {
+    const suppliers = deriveSuppliers(
+      [{ po_number: 'PO-100', supplier_name: 'TestCo', extras: {} }],
+      [{ po_number: 'PO-100', qty_ordered: 4, unit_cost: 2.5, extras: {} }],
+    )
+    expect(suppliers).toHaveLength(1)
+    expect(suppliers[0]!.total_spend).toBe(10)
+  })
+
+  it('sorts suppliers alphabetically by name regardless of insertion order', () => {
+    const suppliers = deriveSuppliers(
+      [
+        { po_number: 'PO-1', supplier_name: 'Zeta Supply', extras: {} },
+        { po_number: 'PO-2', supplier_name: 'Alpha Goods', extras: {} },
+      ],
+      [],
+    )
+    expect(suppliers.map((s) => s.supplier_name)).toEqual(['Alpha Goods', 'Zeta Supply'])
+  })
 })
