@@ -8,7 +8,7 @@ guide](https://help.shopify.com/en/manual/products/inventory/transitioning-from-
 you have **read-only access to export your data for at least 90 days** after that date —
 roughly through the end of November 2026. After that, it's gone.
 
-**→ Use the tool: https://QSOREN_GH_USER.github.io/stocky-rescue/**
+**→ Use the tool: https://qsor27.github.io/stocky-rescue/**
 
 Everything runs in your browser. **Your files never leave your computer.** No uploads,
 no accounts, no server. MIT licensed.
