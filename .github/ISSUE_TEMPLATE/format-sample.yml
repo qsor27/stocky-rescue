@@ -1,0 +1,20 @@
+name: Format sample (my file didn't parse)
+description: Share a redacted sample of a Stocky export the tool didn't recognize
+title: "Format sample: <which export>"
+labels: [format-sample]
+body:
+  - type: textarea
+    id: sample
+    attributes:
+      label: Redacted sample (header row + 2-3 data rows)
+      description: >
+        Paste the header row and a few rows. Please REDACT anything sensitive —
+        replace supplier names, SKUs and costs with fake values; only the column
+        layout matters.
+      render: csv
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Which Stocky screen produced this file?

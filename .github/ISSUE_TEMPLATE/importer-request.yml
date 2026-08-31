@@ -1,0 +1,20 @@
+name: Importer request
+description: Ask for a ready-made import from the rescue dataset into a replacement app
+title: "Importer: <destination app>"
+labels: [importer-request]
+body:
+  - type: input
+    id: destination
+    attributes:
+      label: Destination app
+      description: Which app should the rescue dataset import into?
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: What data matters most?
+      description: e.g. suppliers, PO history, costs, stock levels
+  - type: markdown
+    attributes:
+      value: "👍 this issue if you want the same importer — most-requested gets built first."
