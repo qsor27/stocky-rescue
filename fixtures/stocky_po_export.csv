@@ -1,0 +1,5 @@
+PO number,Supplier,Status,Created at,Ordered at,Received at,Currency,SKU,Product title,Quantity,Received quantity,Cost price,Total
+PO-1001,Acme Textiles,received,2026-05-01,2026-05-02,2026-05-12,USD,TSHIRT-S,Basic Tee S,10,10,4.50,45.00
+PO-1001,Acme Textiles,received,2026-05-01,2026-05-02,2026-05-12,USD,TSHIRT-M,Basic Tee M,20,18,$4.75,95.00
+PO-1002,Blue Denim Co,received,2026-06-10,2026-06-11,2026-06-25,USD,JEAN-32,Denim Jean 32,15,15,12.00,180.00
+PO-1003,Acme Textiles,ordered,2026-08-01,2026-08-02,,USD,TSHIRT-S,Basic Tee S,30,,4.90,147.00
