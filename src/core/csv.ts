@@ -50,5 +50,6 @@ export function toIsoDate(raw: string | undefined): string | undefined {
   if (/^\d{4}-\d{2}-\d{2}/.test(t)) return t.slice(0, 10)
   const ms = Date.parse(t)
   if (Number.isNaN(ms)) return undefined
-  return new Date(ms).toISOString().slice(0, 10)
+  const d = new Date(ms)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
