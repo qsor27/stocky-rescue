@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
 import JSZip from 'jszip'
 import { rescue } from './rescue'
@@ -30,6 +30,22 @@ describe('rescue pipeline', () => {
       detected_type: 'stocky_po',
       rows: 4,
     })
+  })
+
+  it('turns a thrown parser error into a warning and continues', async () => {
+    vi.resetModules()
+    vi.doMock('./parse/purchaseOrders', () => ({
+      parsePurchaseOrders: () => { throw new Error('boom') },
+    }))
+    const { rescue: rescueMocked } = await import('./rescue')
+    const { dataset } = await rescueMocked(
+      [read('stocky_po_export.csv'), read('stocky_cost_report.csv')],
+      NOW,
+    )
+    vi.doUnmock('./parse/purchaseOrders')
+    expect(dataset.warnings.some((w) => w.message.includes('failed to parse') && w.message.includes('boom'))).toBe(true)
+    expect(dataset.sources.find((s) => s.filename === 'stocky_po_export.csv')).toMatchObject({ rows: 0 })
+    expect(dataset.cost_history).toHaveLength(1) // the cost-report file still processed
   })
 
   it('warns on unknown files instead of failing', async () => {
