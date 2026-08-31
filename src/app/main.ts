@@ -34,6 +34,15 @@ async function handleFiles(fileList: FileList | File[]): Promise<void> {
       const li = document.createElement('li')
       li.className = w.level
       li.textContent = w.message
+      if (/not recognized|failed to parse/.test(w.message)) {
+        li.append(' ')
+        const a = document.createElement('a')
+        a.href = 'https://github.com/qsor27/stocky-rescue/issues/new?template=format-sample.yml'
+        a.target = '_blank'
+        a.rel = 'noopener'
+        a.textContent = 'report this format'
+        li.append(a)
+      }
       return li
     }),
   )

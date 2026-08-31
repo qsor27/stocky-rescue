@@ -76,6 +76,40 @@ describe('rescue pipeline', () => {
   })
 })
 
+describe('cross-file PO handling', () => {
+  it('dedupes a purchase order that appears in two files instead of double-counting spend', async () => {
+    const po = read('stocky_po_export.csv')
+    const { dataset } = await rescue([po, po], NOW)
+    expect(dataset.purchase_orders).toHaveLength(3)
+    const acme = dataset.suppliers.find((s) => s.supplier_name === 'Acme Textiles')
+    expect(acme?.total_spend).toBe(287)
+    expect(dataset.suppliers.map((s) => s.supplier_name)).toEqual(['Acme Textiles', 'Blue Denim Co'])
+    expect(
+      dataset.warnings.some((w) => w.message.includes('duplicate purchase order')),
+    ).toBe(true)
+  })
+
+  it('keeps distinct "(unknown)" batches from separate no-PO-number files apart', async () => {
+    const fileA = {
+      name: 'a.csv',
+      text: 'Supplier,SKU,Quantity,Cost price,Total\nAcme,X,5,10,50\n',
+    }
+    const fileB = {
+      name: 'b.csv',
+      text: 'Supplier,SKU,Quantity,Cost price,Total\nBlue,Y,2,20,40\n',
+    }
+    const { dataset } = await rescue([fileA, fileB], NOW)
+    expect(dataset.purchase_orders).toHaveLength(2)
+    const poNumbers = dataset.purchase_orders.map((o) => o.po_number)
+    expect(new Set(poNumbers).size).toBe(2)
+
+    const acme = dataset.suppliers.find((s) => s.supplier_name === 'Acme')
+    const blue = dataset.suppliers.find((s) => s.supplier_name === 'Blue')
+    expect(acme?.total_spend).toBe(50)
+    expect(blue?.total_spend).toBe(40)
+  })
+})
+
 describe('datasetTables', () => {
   it('prefixes extra columns with x_ and never drops them', async () => {
     const { dataset } = await rescue(

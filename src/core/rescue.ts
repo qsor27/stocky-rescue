@@ -27,6 +27,8 @@ export async function rescue(files: InputFile[], now: Date): Promise<RescueResul
   }
   const stock: ProductStock[] = []
   const costEvents: CostEvent[] = []
+  const seenPoNumbers = new Set<string>()
+  let unknownPoContributed = false
 
   for (const file of files) {
     let type = 'unknown'
@@ -35,8 +37,40 @@ export async function rescue(files: InputFile[], now: Date): Promise<RescueResul
       type = detectFileType(headers)
       if (type === 'stocky_po') {
         const r = parsePurchaseOrders(file)
-        dataset.purchase_orders.push(...r.orders)
-        dataset.purchase_order_lines.push(...r.lines)
+        const droppedPoNumbers = new Set<string>()
+        const rewrittenPoNumbers = new Map<string, string>()
+        const keptOrders = []
+        for (const order of r.orders) {
+          if (order.po_number === '(unknown)') {
+            if (unknownPoContributed) {
+              const rewritten = `(unknown) [${file.name}]`
+              rewrittenPoNumbers.set('(unknown)', rewritten)
+              keptOrders.push({ ...order, po_number: rewritten })
+            } else {
+              unknownPoContributed = true
+              keptOrders.push(order)
+            }
+          } else if (seenPoNumbers.has(order.po_number)) {
+            droppedPoNumbers.add(order.po_number)
+            dataset.warnings.push({
+              level: 'warn',
+              source: file.name,
+              message: `${file.name}: duplicate purchase order ${order.po_number} ignored (already loaded from an earlier file).`,
+            })
+          } else {
+            seenPoNumbers.add(order.po_number)
+            keptOrders.push(order)
+          }
+        }
+        const keptLines = r.lines
+          .filter((l) => !droppedPoNumbers.has(l.po_number))
+          .map((l) =>
+            rewrittenPoNumbers.has(l.po_number)
+              ? { ...l, po_number: rewrittenPoNumbers.get(l.po_number)! }
+              : l,
+          )
+        dataset.purchase_orders.push(...keptOrders)
+        dataset.purchase_order_lines.push(...keptLines)
         costEvents.push(...r.costEvents)
         dataset.warnings.push(...r.warnings)
       } else if (type === 'stocky_stocktake') {
