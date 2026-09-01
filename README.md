@@ -18,7 +18,8 @@ no accounts, no server. MIT licensed.
 1. **Purchase orders** — Stocky → Purchase Orders → Export All (CSV)
 2. **Stocktakes** — Stocky → Reports → stocktake history (CSV)
 3. **Historical costs** — Stocky → Reports → cost report (CSV)
-4. Optional: **Products** — Shopify admin → Products → Export (adds on-hand valuation)
+4. Optional: **Products** — Shopify admin → Products → Export (adds on-hand valuation
+   **and unlocks `shopify_cost_import.csv`** — see below)
 
 ## What you get back
 
@@ -28,6 +29,10 @@ One zip — the **rescue dataset** ([format documented here](FORMAT.md)):
 - **`suppliers.csv`** — your supplier list *reconstructed from PO history* (PO count,
   total spend, first/last order, average lead time). Stocky cannot export suppliers;
   this rebuilds them from what it can export.
+- **`shopify_cost_import.csv`** — *(when you provide a Shopify products export)* your own
+  export with **Cost per item filled in from the recovered costs**. Re-import it in Shopify
+  admin (Products → Import → overwrite existing) and your cost data is back in Shopify —
+  no app, no API keys, nothing leaves your browser.
 - **`wac_report.csv`** — per-SKU cost analytics (last cost, receipt-weighted averages,
   valuation), honestly labeled as receipt-based approximations
 - `dataset.json` + `manifest.json` for anything programmatic

@@ -7,6 +7,7 @@ import { parseCostReport } from './parse/costs'
 import { parseShopifyProducts } from './parse/shopifyProducts'
 import { deriveSuppliers } from './derive/suppliers'
 import { deriveWac } from './derive/wac'
+import { buildShopifyCostImport } from './emit/shopifyCostImport'
 import { buildZip } from './emit/zip'
 
 export interface RescueResult {
@@ -29,6 +30,7 @@ export async function rescue(files: InputFile[], now: Date): Promise<RescueResul
   const costEvents: CostEvent[] = []
   const seenPoNumbers = new Set<string>()
   let unknownPoContributed = false
+  let productsFile: InputFile | undefined
 
   for (const file of files) {
     let type = 'unknown'
@@ -85,6 +87,15 @@ export async function rescue(files: InputFile[], now: Date): Promise<RescueResul
         const r = parseShopifyProducts(file)
         stock.push(...r.stock)
         dataset.warnings.push(...r.warnings)
+        if (productsFile === undefined) {
+          productsFile = file
+        } else {
+          dataset.warnings.push({
+            level: 'info',
+            source: file.name,
+            message: `${file.name}: shopify_cost_import.csv is built from the first products export only (${productsFile.name}).`,
+          })
+        }
       } else {
         dataset.warnings.push({
           level: 'warn',
@@ -108,6 +119,30 @@ export async function rescue(files: InputFile[], now: Date): Promise<RescueResul
   dataset.suppliers = deriveSuppliers(dataset.purchase_orders, dataset.purchase_order_lines)
   dataset.wac_report = deriveWac(costEvents, stock, now)
 
-  const zipBlob = await buildZip(dataset, now)
+  let costImport: { csv: string; updated: number } | undefined
+  if (productsFile !== undefined) {
+    costImport = buildShopifyCostImport(productsFile.text, dataset.wac_report)
+    if (costImport !== undefined) {
+      dataset.warnings.push({
+        level: 'info',
+        source: productsFile.name,
+        message: `shopify_cost_import.csv: recovered costs filled in for ${costImport.updated} SKU(s) — restore them via Shopify admin (Products → Import, overwrite existing products).`,
+      })
+    } else if (dataset.wac_report.length > 0) {
+      dataset.warnings.push({
+        level: 'warn',
+        source: productsFile.name,
+        message: `${productsFile.name}: no recovered costs matched its SKUs — shopify_cost_import.csv not generated.`,
+      })
+    }
+  } else if (dataset.wac_report.length > 0) {
+    dataset.warnings.push({
+      level: 'info',
+      message:
+        'Tip: also drop in your Shopify products export to get shopify_cost_import.csv — a ready-to-import file that restores your recovered costs into Shopify.',
+    })
+  }
+
+  const zipBlob = await buildZip(dataset, now, costImport)
   return { dataset, zipBlob }
 }

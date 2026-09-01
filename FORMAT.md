@@ -100,6 +100,17 @@ Per-SKU weighted-average cost analysis.
 | value_at_last_cost (optional) | number | `on_hand × last_cost` |
 | value_at_avg_all_time (optional) | number | `on_hand × avg_cost_all_time` |
 
+### shopify_cost_import.csv (optional)
+
+Present only when a Shopify products export was among the inputs AND at least one of its
+SKUs matched a recovered cost. It is the merchant's own products export, round-tripped
+verbatim — every original column and value preserved — with **`Cost per item`** set (or the
+column appended) on rows whose `Variant SKU` matched. Cost basis: `last_cost`, falling back
+to `avg_cost_all_time`, formatted to 2 decimals. Rows with no recovered cost are untouched.
+Import via Shopify admin → Products → Import → "Overwrite products with matching handles".
+Because it mirrors the source export, its columns are the merchant's, not this spec's.
+When present, `manifest.json` gains `counts.shopify_cost_import_skus` (rows updated).
+
 ## JSON Files
 
 ### dataset.json

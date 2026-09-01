@@ -1,6 +1,7 @@
 import JSZip from 'jszip'
 import type { RescueDataset } from '../model'
 import { datasetTables } from './tables'
+import pkg from '../../../package.json'
 
 const DATASET_README = `STOCKY RESCUE DATASET
 =====================
@@ -31,16 +32,32 @@ Columns starting with "x_" are columns from your original files that the tool
 did not recognize — preserved verbatim, never dropped.
 `
 
-export async function buildZip(d: RescueDataset, generatedAt: Date): Promise<Blob> {
+const COST_IMPORT_README = `
+Also included:
+- shopify_cost_import.csv ..... your own Shopify products export with "Cost per
+                                item" filled in from the recovered costs (last
+                                receipt cost, falling back to the all-time receipt
+                                average). To restore costs into Shopify: admin ->
+                                Products -> Import -> upload this file -> tick
+                                "Overwrite products with matching handles".
+                                Review it first; only the cost column was changed.
+`
+
+export async function buildZip(
+  d: RescueDataset,
+  generatedAt: Date,
+  costImport?: { csv: string; updated: number },
+): Promise<Blob> {
   const zip = new JSZip()
   for (const [name, csv] of Object.entries(datasetTables(d))) zip.file(name, csv)
+  if (costImport !== undefined) zip.file('shopify_cost_import.csv', costImport.csv)
   zip.file('dataset.json', JSON.stringify(d, null, 2))
   zip.file(
     'manifest.json',
     JSON.stringify(
       {
         tool: 'stocky-rescue',
-        tool_version: '0.1.0',
+        tool_version: pkg.version,
         format_version: 1,
         generated_at: generatedAt.toISOString(),
         sources: d.sources,
@@ -51,6 +68,7 @@ export async function buildZip(d: RescueDataset, generatedAt: Date): Promise<Blo
           cost_history: d.cost_history.length,
           suppliers: d.suppliers.length,
           wac_report: d.wac_report.length,
+          ...(costImport !== undefined ? { shopify_cost_import_skus: costImport.updated } : {}),
         },
         warnings: d.warnings,
       },
@@ -58,6 +76,6 @@ export async function buildZip(d: RescueDataset, generatedAt: Date): Promise<Blo
       2,
     ),
   )
-  zip.file('README.txt', DATASET_README)
+  zip.file('README.txt', costImport !== undefined ? DATASET_README + COST_IMPORT_README : DATASET_README)
   return zip.generateAsync({ type: 'blob' })
 }

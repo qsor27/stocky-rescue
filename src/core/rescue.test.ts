@@ -122,3 +122,33 @@ describe('datasetTables', () => {
     expect(lines).toContain('East')
   })
 })
+
+describe('shopify cost import', () => {
+  it('emits shopify_cost_import.csv when a products export is provided', async () => {
+    const { dataset, zipBlob } = await rescue(
+      [read('stocky_po_export.csv'), read('shopify_products.csv')],
+      NOW,
+    )
+    const zip = await JSZip.loadAsync(await zipBlob.arrayBuffer())
+    const entry = zip.files['shopify_cost_import.csv']
+    expect(entry).toBeDefined()
+    const csv = await entry!.async('string')
+    expect(csv).toContain('Cost per item')
+    expect(csv).toContain('basic-tee,Basic Tee,TSHIRT-S,25,19.99,4.50')
+    expect(csv).toContain('denim-jean,Denim Jean,JEAN-32,7,49.99,12.00')
+    const manifest = JSON.parse(await zip.files['manifest.json']!.async('string'))
+    expect(manifest.counts.shopify_cost_import_skus).toBe(2)
+    expect(
+      dataset.warnings.some((w) => w.level === 'info' && w.message.includes('shopify_cost_import.csv')),
+    ).toBe(true)
+  })
+
+  it('hints about the cost-import file when no products export was provided', async () => {
+    const { dataset, zipBlob } = await rescue([read('stocky_po_export.csv')], NOW)
+    expect(
+      dataset.warnings.some((w) => w.level === 'info' && w.message.includes('Shopify products export')),
+    ).toBe(true)
+    const zip = await JSZip.loadAsync(await zipBlob.arrayBuffer())
+    expect(zip.files['shopify_cost_import.csv']).toBeUndefined()
+  })
+})
